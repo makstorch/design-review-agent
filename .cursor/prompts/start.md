@@ -1,7 +1,9 @@
-Start
+# Start
 
-Write in chat:
+Команда запуска:
+`/design-review-start`
 
-start
+Legacy-команда:
+`start design review`
 
-The agent will automatically guide you through the first design review workflow.
+После запуска агент покажет 4 режима сравнения и попросит выбрать номер `1-4`.
