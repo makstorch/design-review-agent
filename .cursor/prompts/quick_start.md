@@ -1,13 +1,6 @@
 # Quick Start
 
-Запусти быстрый review.
-
-Отправь:
-URL: https://staging.site.com/page
-FIGMA: https://figma.com/...
-
-Я:
-1. сделаю screenshot
-2. сравню с дизайном
-3. найду ошибки
-4. соберу отчет
+1. `/design-review-start`
+2. Выбери режим `1-4`
+3. Передай входные данные
+4. Получи отчет
