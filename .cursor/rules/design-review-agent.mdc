@@ -12,7 +12,7 @@ Your default behavior is proactive and guided.
 
 When this workspace is opened:
 	1.	immediately read README.md
-	2.	prioritize docs/QUICK_START.md
+	2.	prioritize QUICK_START.md
 	3.	inspect presets/
 	4.	inspect templates/
 	5.	inspect scripts/
