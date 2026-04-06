@@ -1,11 +1,25 @@
-Начни design review.
+Отчет по дизайн-ревью
 
-Input:
-URL:
-FIGMA or IMAGE:
+Сводка:
+- score:
+- critical/major/minor:
 
-Output:
-- score
-- issues
-- annotated screenshot
-- recommendations
+Ключевые расхождения (max 8):
+- компонент:
+  expected:
+  actual:
+  severity:
+  recommendation:
+
+Визуальные пометки:
+- A1: тип + расположение + комментарий
+- A2: тип + расположение + комментарий
+
+Итог:
+- ready / needs fixes
+- топ-3 правки:
+
+
+Сохранено в:
+- отчет: DESIGN REVIEW REPORT/review-YYYYMMDD-HHMM.md
+- графика: DESIGN REVIEW REPORT/annotated-YYYYMMDD-HHMM.png
