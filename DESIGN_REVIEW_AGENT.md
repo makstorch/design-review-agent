@@ -11,6 +11,16 @@
 - Рекомендуемый текст в чате: **«Запусти дизайн-ревью по файлу DESIGN_REVIEW_AGENT.md»** (или прикрепи этот файл).
 - В Cursor дополнительно: `/design-review`, `/design-review-start`, legacy: `start design review`.
 
+## Подготовка проекта
+
+Перед первым запуском у пользователя должна быть локальная копия проекта.
+
+**Копипаст-команда (скачать или обновить и сразу перейти в папку):**  
+`git -C "design-review-agent" pull || git clone https://github.com/makstorch/design-review-agent.git && cd "design-review-agent"`
+
+**Если доступа к GitHub нет:**  
+передай архив проекта (`.zip`) или папку `design-review-agent` любым доступным способом.
+
 ## Команды (Cursor и совместимые IDE)
 
 Префикс `/design-review-`:
