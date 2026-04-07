@@ -1,6 +1,11 @@
 # Quick Start
 
-**Не Cursor?** Открой [`DESIGN_REVIEW_AGENT.md`](DESIGN_REVIEW_AGENT.md), вставь в инструкции проекта или прикрепи к чату и напиши: «Запусти дизайн-ревью по этому файлу».
+**Подготовить локальную папку проекта:**
+`git -C "design-review-agent" pull || git clone https://github.com/makstorch/design-review-agent.git && cd "design-review-agent"`
+
+**Если у сервиса нет доступа к работе с git:** сначала скачай репозиторий в архиве (`.zip`) или подготовь папку `design-review-agent`, затем передай эти файлы в сервис.
+
+**Не Cursor?** Открой [`DESIGN_REVIEW_AGENT.md`](DESIGN_REVIEW_AGENT.md), вставь в инструкции проекта или прикрепи к чату и напиши: «Запусти процесс дизайн-ревью».
 
 1. Напиши в чат: `/design-review` или `/design-review-start`
 2. Выбери режим сравнения: `1`, `2`, `3` или `4`
