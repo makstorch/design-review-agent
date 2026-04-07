@@ -1,56 +1,52 @@
-# Design Review Agent
-Агент для проверки соответствия верстки дизайну
+# Design Review Agent v1.0
 
-| Среда | Как подключить |
-|--------|----------------|
-| **Любая** | Каноничные правила лежат в [`DESIGN_REVIEW_AGENT.md`](DESIGN_REVIEW_AGENT.md) — скопируй текст в system / project instructions или прикрепи файл к первому сообщению. |
-| **Cursor** | Автоматически: `.cursor/rules/design-review-agent.mdc` + Skill `.cursor/skills/design-review/`. Команды `/design-review`, `/design-review-start`. |
-| **Claude** (Projects / веб) | Вставь содержимое `DESIGN_REVIEW_AGENT.md` в инструкции проекта или начни чат с: «Следуй инструкциям из прикреплённого DESIGN_REVIEW_AGENT.md». |
-| **Codex / ChatGPT** | Custom instructions или первое сообщение + вложение `DESIGN_REVIEW_AGENT.md`; затем режим `1–4` и входные данные. |
+Готовый инструмент для проведения дизайн-ревью верстки: сравнивает реализацию с макетом/референсом, подсвечивает зоны расхождений и сохраняет отчет в `DESIGN REVIEW REPORT/`.
 
-Универсальная фраза для старта в любом чате: **«Запусти дизайн-ревью по DESIGN_REVIEW_AGENT.md, режим N»** (подставь N или попроси меню)
+## Команды для Cursor
 
-## Команды
+- `/design-review` — быстрый запуск сценария ревью
+- `/design-review-start` — старт и выбор режима
+- `/design-review-help` — краткая справка
+- `/design-review-run` — запуск, если вход уже передан
+- `/design-review-report` — показать текущий формат отчета
+- `/design-review-clean` — очистить `DESIGN REVIEW REPORT/` (кроме `.gitkeep`)
+- `/design-review-update` — показать команду обновления
 
-- `/design-review` — slash-команда Skill для запуска сценария дизайн-ревью
-- `/design-review-start` — запуск и выбор режима сравнения
-- `/design-review-help` — справка по режимам и входным данным
-- `/design-review-run` — запустить проверку, если входные данные уже готовы
-- `/design-review-report` — вывести отчет в компактном формате
-- `/design-review-clean` — удалить все файлы в `DESIGN REVIEW REPORT/`, кроме `.gitkeep`
+Поддерживается legacy-команда: `start design review`.
 
-Поддерживается legacy-команда `start design review`, но рекомендуется использовать префикс `/design-review-`
+## Запуск
 
-## Режимы сравнения
+- **Cursor**: используй slash-команды выше.
+- **Claude / Codex / ChatGPT**:
+  1. прикрепи файл `DESIGN_REVIEW_AGENT.md` в чат;
+  2. отправь готовый промпт:
 
+```text
+Следуй инструкциям из прикрепленного файла DESIGN_REVIEW_AGENT.md.
+Запусти дизайн-ревью, режим 1-4 уточни у меня.
+```
+
+## Режимы сравнения и результат
+
+### Режимы сравнения
 1. Скриншот из браузера vs картинка дизайна
 2. Скриншот из браузера vs ссылка на Figma
 3. Ссылка на веб-страницу vs картинка дизайна
 4. Ссылка на веб-страницу vs ссылка на Figma
 
-## Как использовать
+### Что на выходе
+- краткое резюме с процентом соответствия
+- список несоответствий по блокам
+- PNG с отмеченными зонами ошибок
+- отчет в `md` и `pdf`
 
-1. Открой проект в Cursor
-2. Напиши `/design-review` (или `/design-review-start`)
-3. Выбери режим: `1`, `2`, `3` или `4`
-4. Передай обязательные входные данные для выбранного режима
-5. Получи отчет с визуальными пометками неточностей
+### Папка результатов
+Все артефакты сохраняются в `DESIGN REVIEW REPORT/`:
+- `review-YYYYMMDD-HHMM.md`
+- `annotated-YYYYMMDD-HHMM.png`
+- `review-YYYYMMDD-HHMM.pdf`
 
-## Что в отчете
+## Обновление
 
-- Сводка: score + critical/major/minor
-- Ключевые расхождения: до 8 самых важных несоответствий
-- Визуальные пометки: зоны расхождений
-- Итог: ready или needs fixes
-
-
-## Папка результатов
-
-Все артефакты лежат **в одной папке** `DESIGN REVIEW REPORT/` (без вложенных `reports/` и `annotated/`):
-
-- `review-YYYYMMDD-HHMM.md` — текстовый отчёт
-- `annotated-YYYYMMDD-HHMM.png` — картинка с пометками
-
-При коллизии имён добавляй суффикс `-01`, `-02` и т.д.
-
-Очистка: `/design-review-clean` или фраза в любом чате с каноном: «Очисти DESIGN REVIEW REPORT по DESIGN_REVIEW_AGENT.md»
+Команда одной строкой:
+`git -C "design-review-agent" pull || git clone https://github.com/makstorch/design-review-agent`
