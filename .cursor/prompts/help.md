@@ -6,6 +6,7 @@
 - /design-review-run
 - /design-review-report
 - /design-review-clean
+- /design-review-update
 
 Режимы сравнения:
 1) Скриншот из браузера vs картинка дизайна
@@ -28,9 +29,30 @@
 - итоговый вердикт
 
 
-Сохранение результатов (всё в одной папке):
+Сохранение результатов (всё в одной папке, **один timestamp**):
 - отчет: `DESIGN REVIEW REPORT/review-YYYYMMDD-HHMM.md`
-- графика: `DESIGN REVIEW REPORT/annotated-YYYYMMDD-HHMM.png`
+- графика (обязательно): `DESIGN REVIEW REPORT/annotated-YYYYMMDD-HHMM.png` — через `scripts/annotate_review.py` или генератор изображений среды
+
+PDF для команды:
+- `python3 scripts/review_to_pdf.py "DESIGN REVIEW REPORT/review-YYYYMMDD-HHMM.md"` → `review-*.pdf`
+- зависимости: `scripts/requirements-pdf.txt`
 
 Очистка (`/design-review-clean`):
 - удаляется всё в `DESIGN REVIEW REPORT/`, кроме `.gitkeep`
+
+
+Формат служебных сообщений:
+- старт: «🥷 Design Review Agent v1.0 by makstorch»
+- перед запуском: «✅ Принял URL и макет»
+- завершение: «✅ Процесс дизайн-ревью завершен»
+- после завершения: список команд для следующего запуска, без вопросов «если хочешь…»
+
+
+Если данных недостаточно для режима:
+- агент пишет, каких полей не хватает, и НЕ запускает пайплайн до полного ввода.
+
+Обновление агента:
+- /design-review-update
+- Команда одной строкой: `git -C "design-review-agent" pull || git clone https://github.com/makstorch/design-review-agent`
+- После обновления: `Developer: Reload Window`
+
