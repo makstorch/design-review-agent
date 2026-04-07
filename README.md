@@ -16,14 +16,17 @@
 
 ## Запуск
 
-- **Cursor**: используй slash-команды выше.
-- **Claude / Codex / ChatGPT**:
+- **Подготовить локальную папку проекта:**
+  `git -C "design-review-agent" pull || git clone https://github.com/makstorch/design-review-agent.git && cd "design-review-agent"`
+- **Если у сервиса нет доступа к работе с git:** сначала скачай репозиторий в архиве (`.zip`) или подготовь папку `design-review-agent`, затем передай эти файлы в сервис.
+- **Для Cursor**: используй slash-команды выше.
+- **Для Claude / Codex / ChatGPT**:
   1. прикрепи файл `DESIGN_REVIEW_AGENT.md` в чат;
   2. отправь готовый промпт:
 
 ```text
 Следуй инструкциям из прикрепленного файла DESIGN_REVIEW_AGENT.md.
-Запусти дизайн-ревью, режим 1-4 уточни у меня.
+Запусти процесс дизайн-ревью.
 ```
 
 ## Режимы сравнения и результат
@@ -49,4 +52,4 @@
 ## Обновление
 
 Команда одной строкой:
-`git -C "design-review-agent" pull || git clone https://github.com/makstorch/design-review-agent`
+`git -C "design-review-agent" pull || git clone https://github.com/makstorch/design-review-agent.git`
