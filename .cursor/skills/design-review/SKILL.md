@@ -1,15 +1,15 @@
 ---
 name: design-review
-description: Runs guided UI design review in Cursor with four comparison modes, saves reports under DESIGN REVIEW REPORT/, and supports /design-review-clean to remove generated artifacts. Use when user asks for design QA, visual mismatch checks, layout-to-design comparison, or clearing review output folders
+description: Runs guided UI design review in Cursor with four comparison modes, saves reports under DESIGN REVIEW REPORT/, and supports /design-review-clean to remove generated artifacts. Use when user asks for design QA, visual mismatch checks, layout-to-design comparison, or clearing review output folders.
 ---
 
 # Design Review Skill
 
-Canonical behavior (Russian, all environments): see [DESIGN_REVIEW_AGENT.md](../../../DESIGN_REVIEW_AGENT.md) at repo root
+Canonical behavior (Russian, all environments): see [DESIGN_REVIEW_AGENT.md](../../../DESIGN_REVIEW_AGENT.md) at repo root.
 
 ## Slash command
 
-Use `/design-review` to start a guided review flow
+Use `/design-review` to start a guided review flow.
 
 ## Workflow
 
@@ -18,12 +18,13 @@ Use `/design-review` to start a guided review flow
    - `2` Screenshot from browser vs Figma link
    - `3` Web page URL vs design image
    - `4` Web page URL vs Figma link
-2. Ask only for missing required inputs for selected mode
-3. Run comparison and return a compact report
-4. Save artifacts into flat folder `DESIGN REVIEW REPORT/`:
+2. Ask only for missing required inputs for selected mode.
+3. Run comparison and return a compact report.
+4. Save artifacts into flat folder `DESIGN REVIEW REPORT/` with the **same timestamp**:
    - `review-YYYYMMDD-HHMM.md`
-   - `annotated-YYYYMMDD-HHMM.png`
-5. Always include saved relative file paths in the final response
+   - `annotated-YYYYMMDD-HHMM.png` (**required every time** — use `scripts/annotate_review.py` + `scripts/requirements-annotate.txt`, or environment image tool if script unavailable)
+5. After writing the Markdown report, run `scripts/review_to_pdf.py` on the same file when dependencies are available (`scripts/requirements-pdf.txt`) so designers get `review-*.pdf`.
+6. Always include saved relative file paths in the final response.
 
 ## Report format
 
@@ -58,6 +59,6 @@ Return exactly these blocks:
 
 When user runs `/design-review-clean` or asks to clear `DESIGN REVIEW REPORT`:
 
-1. Delete all files in `DESIGN REVIEW REPORT/` except root `.gitkeep`
-2. Do not delete other repo folders
-3. Summarize what was removed. Full rules: [DESIGN_REVIEW_AGENT.md](../../../DESIGN_REVIEW_AGENT.md)
+1. Delete all files in `DESIGN REVIEW REPORT/` except root `.gitkeep`.
+2. Do not delete other repo folders.
+3. Summarize what was removed. Full rules: [DESIGN_REVIEW_AGENT.md](../../../DESIGN_REVIEW_AGENT.md).
