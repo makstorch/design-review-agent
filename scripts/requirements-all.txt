@@ -1,0 +1,3 @@
+-r requirements-annotate.txt
+-r requirements-pdf.txt
+numpy>=1.26
