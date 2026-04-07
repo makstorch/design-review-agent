@@ -1,6 +1,6 @@
 # Quick Start
 
-**Не Cursor?** Открой [`DESIGN_REVIEW_AGENT.md`](DESIGN_REVIEW_AGENT.md), вставь в инструкции проекта или прикрепи к чату и напиши: «Запусти дизайн-ревью по этому файлу»
+**Не Cursor?** Открой [`DESIGN_REVIEW_AGENT.md`](DESIGN_REVIEW_AGENT.md), вставь в инструкции проекта или прикрепи к чату и напиши: «Запусти дизайн-ревью по этому файлу».
 
 1. Напиши в чат: `/design-review` или `/design-review-start`
 2. Выбери режим сравнения: `1`, `2`, `3` или `4`
@@ -14,6 +14,6 @@
 4) Ссылка на веб-страницу vs ссылка на Figma
 
 
-Файлы сохраняются в `DESIGN REVIEW REPORT/` с именами `review-…` и `annotated-…` (см. README)
+Файлы сохраняются в `DESIGN REVIEW REPORT/` с именами `review-…` и `annotated-…` (см. README).
 
-Очистить папку: `/design-review-clean` (остаётся только `.gitkeep`)
+Очистить папку: `/design-review-clean` (остаётся только `.gitkeep`).
