@@ -34,6 +34,11 @@ echo "Installing dependencies..."
 uv pip install --python .venv/bin/python -r scripts/requirements-all.txt
 
 echo ""
+echo "Installing Playwright browser (Chromium ~150 MB, first time only)..."
+echo "This is needed for modes 3/4 — capturing screenshots from a URL."
+".venv/bin/python" -m playwright install chromium || echo "WARN: 'playwright install chromium' failed. Modes 3/4 will not work until this succeeds. Re-run repair.command later."
+
+echo ""
 echo "Running environment check..."
 ".venv/bin/python" scripts/check_env.py
 
