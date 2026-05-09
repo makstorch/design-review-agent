@@ -169,7 +169,11 @@ def annotate(
         out = out.resize((int(base_w * output_scale), int(base_h * output_scale)), Image.Resampling.LANCZOS)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    out.convert("RGB").save(output_path, format="PNG", optimize=True, compress_level=1)
+    # Preserve alpha channel if the source had one; otherwise flatten to RGB.
+    # compress_level=1 keeps PNG fast to write; optimize=True is omitted to
+    # avoid extra entropy passes that don't change quality but add latency.
+    save_mode = "RGBA" if img.mode == "RGBA" else "RGB"
+    out.convert(save_mode).save(output_path, format="PNG", compress_level=1)
 
 
 def main() -> None:
@@ -196,14 +200,14 @@ def main() -> None:
     parser.add_argument(
         "--supersample",
         type=int,
-        default=2,
-        help="Internal draw scale for anti-aliasing (default 2)",
+        default=1,
+        help="Internal draw scale for anti-aliasing (default 1 — no resize, preserves source quality). Set to 2 for smoother strokes on small images.",
     )
     parser.add_argument(
         "--output-scale",
         type=float,
         default=1.0,
-        help="Final output upscale factor (e.g. 2.0 for higher-res PNG)",
+        help="Final output upscale factor (default 1.0 — no quality loss). Avoid values >1.0 unless you specifically need a larger PNG.",
     )
     args = parser.parse_args()
 

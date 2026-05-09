@@ -3,9 +3,9 @@
 Interactive helper to build regions JSON for annotate_review.py.
 
 Example:
-  python3 scripts/regions_builder.py --image "path/to/image.png" --output regions.json
+  .venv/bin/python scripts/regions_builder.py --image "path/to/image.png" --output regions.json
 Then:
-  python3 scripts/annotate_review.py --input "path/to/image.png" --output "DESIGN REVIEW REPORT/annotated-YYYYMMDD-HHMM.png" --regions-json "$(cat regions.json)" --output-scale 2
+  .venv/bin/python scripts/annotate_review.py --input "path/to/image.png" --output "DESIGN REVIEW REPORT/<Slug>-annotated_DD-MM-YYYY-HH-MM.png" --regions-json "$(cat regions.json)"
 """
 from __future__ import annotations
 
@@ -125,7 +125,7 @@ def main() -> None:
     print(f"Saved {len(regions)} zones to: {args.output}")
     print("Use with annotate_review.py:")
     print(
-        f'python3 scripts/annotate_review.py --input "{args.image}" --output "DESIGN REVIEW REPORT/annotated-YYYYMMDD-HHMM.png" --regions-json "$(cat {args.output})" --output-scale 2'
+        f'.venv/bin/python scripts/annotate_review.py --input "{args.image}" --output "DESIGN REVIEW REPORT/<Slug>-annotated_DD-MM-YYYY-HH-MM.png" --regions-json "$(cat {args.output})"'
     )
 
 

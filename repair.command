@@ -28,6 +28,11 @@ echo "Reinstalling requirements into existing .venv..."
 uv pip install --python .venv/bin/python --upgrade -r scripts/requirements-all.txt
 
 echo ""
+echo "Reinstalling Playwright browser (Chromium ~150 MB if missing)..."
+echo "Needed for modes 3/4 — capturing screenshots from a URL."
+".venv/bin/python" -m playwright install chromium || echo "WARN: 'playwright install chromium' failed. Modes 3/4 will not work until this succeeds."
+
+echo ""
 echo "Running environment check..."
 ".venv/bin/python" scripts/check_env.py
 
