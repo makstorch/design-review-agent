@@ -9,12 +9,30 @@ import sys
 from pathlib import Path
 
 
-REQUIRED_MODULES = ("PIL", "markdown", "fpdf", "numpy")
+REQUIRED_MODULES = ("PIL", "markdown", "fpdf", "numpy", "playwright")
 MIN_PYTHON = (3, 10)
 
 
 def check_module(name: str) -> bool:
     return importlib.util.find_spec(name) is not None
+
+
+def check_playwright_chromium() -> bool:
+    """Heuristically verify that Playwright's Chromium binary was downloaded.
+
+    Playwright caches browsers under platform-specific paths. We check the
+    common locations on macOS / Linux / Windows. If none exist, the user will
+    hit a runtime error in modes 3/4.
+    """
+    candidates = [
+        Path.home() / "Library" / "Caches" / "ms-playwright",
+        Path.home() / ".cache" / "ms-playwright",
+        Path(str(Path.home())) / "AppData" / "Local" / "ms-playwright",
+    ]
+    for cache in candidates:
+        if cache.is_dir() and any(p.name.startswith("chromium") for p in cache.iterdir()):
+            return True
+    return False
 
 
 def run_checks(project_root: Path) -> dict:
@@ -23,7 +41,8 @@ def run_checks(project_root: Path) -> dict:
     module_map = {name: check_module(name) for name in REQUIRED_MODULES}
     modules_ok = all(module_map.values())
     venv_ok = venv_python.exists()
-    all_ok = py_ok and modules_ok and venv_ok
+    chromium_ok = check_playwright_chromium() if module_map.get("playwright") else False
+    all_ok = py_ok and modules_ok and venv_ok and chromium_ok
     return {
         "ok": all_ok,
         "python_ok": py_ok,
@@ -31,6 +50,7 @@ def run_checks(project_root: Path) -> dict:
         "venv_ok": venv_ok,
         "venv_python": str(venv_python),
         "modules": module_map,
+        "chromium_ok": chromium_ok,
     }
 
 
@@ -43,8 +63,9 @@ def print_human(result: dict) -> None:
     print("- modules:")
     for name, ok in result["modules"].items():
         print(f"  - {name}: {'ok' if ok else 'missing'}")
+    print(f"- playwright chromium browser: {'ok' if result['chromium_ok'] else 'missing'}")
     if not result["ok"]:
-        print("\nRun ./install.command and then re-check.")
+        print("\nRun ./install.command (or ./repair.command) and then re-check.")
 
 
 def main() -> int:
