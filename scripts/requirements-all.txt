@@ -1,3 +1,4 @@
 -r requirements-annotate.txt
 -r requirements-pdf.txt
+-r requirements-capture.txt
 numpy>=1.26
