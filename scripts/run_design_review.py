@@ -5,17 +5,28 @@ One-command design review pipeline for image-vs-image comparison.
 Inputs:
 - actual image (implementation screenshot)
 - design image (reference mockup)
+- optional --name "Feedback Modal" for contextual filenames
 
-Outputs to DESIGN REVIEW REPORT/:
-- review-YYYYMMDD-HHMM.md
-- annotated-YYYYMMDD-HHMM.png
-- review-YYYYMMDD-HHMM.pdf
+Outputs to DESIGN REVIEW REPORT/ (with --name "Feedback Modal"):
+- Feedback-Modal_DD-MM-YYYY-HH-MM.md
+- Feedback-Modal-annotated_DD-MM-YYYY-HH-MM.png
+- Feedback-Modal_DD-MM-YYYY-HH-MM.pdf
+- Feedback-Modal-source-actual_DD-MM-YYYY-HH-MM.<ext>
+- Feedback-Modal-source-design_DD-MM-YYYY-HH-MM.<ext>
+
+Without --name, falls back to legacy names: review_*.md, annotated_*.png,
+review_*.pdf, source-actual_*, source-design_*.
+
+Originals are copied via shutil.copyfile (no re-encoding); the actual screenshot
+is annotated in its native resolution to preserve image quality.
 """
 from __future__ import annotations
 
 import argparse
 import datetime as dt
 import json
+import re
+import shutil
 import subprocess
 import sys
 from collections import deque
@@ -36,7 +47,26 @@ def ensure_report_dir() -> None:
 
 
 def timestamp_now() -> str:
-    return dt.datetime.now().strftime("%Y%m%d-%H%M")
+    """Return DD-MM-YYYY-HH-MM, all dash-separated for cross-platform safety.
+
+    Used in filenames where colons/spaces would be unsafe. Inside reports,
+    write the human form `DD-MM-YYYY HH:MM` instead.
+    """
+    return dt.datetime.now().strftime("%d-%m-%Y-%H-%M")
+
+
+def slugify(name: str) -> str:
+    """Convert a free-form screen name into a filesystem-safe slug.
+
+    Rules: keep ASCII letters/digits, collapse runs of other chars into single
+    dashes, capitalize each word so Finder shows readable names like
+    "Feedback-Modal".
+    """
+    cleaned = re.sub(r"[^A-Za-z0-9]+", " ", name).strip()
+    if not cleaned:
+        return ""
+    parts = [p for p in cleaned.split(" ") if p]
+    return "-".join(p[:1].upper() + p[1:] for p in parts)
 
 
 def add_suffix_if_exists(path: Path) -> Path:
@@ -194,66 +224,187 @@ def build_regions(
     return regions
 
 
+def _format_design_system_block(notes: str) -> list[str]:
+    """Build the 'Соответствие дизайн-системе' block.
+
+    If notes are empty, write the explicit "DS not provided" line so the
+    section always exists and the agent can later post-process it.
+    """
+    header = ["", "## Соответствие дизайн-системе"]
+    text = (notes or "").strip()
+    if not text:
+        return header + [
+            "",
+            "Дизайн-система не была передана, проверка выполнена только по макету/референсу.",
+        ]
+    body_lines = [line.rstrip() for line in text.splitlines()]
+    return header + ["", *body_lines]
+
+
+def _image_dims(path: Path) -> str | None:
+    """Return image dimensions as `WxH px`, or None if unreadable."""
+    try:
+        with Image.open(path) as im:
+            w, h = im.size
+        return f"{w}x{h} px"
+    except Exception:
+        return None
+
+
+def _score_breakdown(crit: int, major: int, minor: int) -> tuple[int, str]:
+    """Compute score and a human-readable formula breakdown.
+
+    Formula: score = max(0, 100 − critical×10 − major×5 − minor×2)
+    """
+    score = max(0, 100 - crit * 10 - major * 5 - minor * 2)
+    formula = (
+        "score = max(0, 100 − критичные×10 − значимые×5 − незначительные×2)"
+        f"  →  100 − {crit}×10 − {major}×5 − {minor}×2 = {score}"
+    )
+    return score, formula
+
+
 def write_report(
     md_path: Path,
     annotated_name: str,
     regions: list[dict],
-    score: int,
     actual_path: Path,
     design_path: Path,
+    title: str = "Скриншот vs Скриншот",
+    source_actual_name: str | None = None,
+    source_design_name: str | None = None,
+    design_system_notes: str = "",
 ) -> None:
+    """Write a design-review report skeleton.
+
+    The script auto-detects pixel-level differences but cannot classify them
+    by type (typography / color / spacing / …) or assign Impact / Effort —
+    that is the agent's job during post-processing. We therefore lay out all
+    eight required sections with explicit placeholders so post-processing is
+    a fill-in-the-blanks pass rather than a re-write.
+    """
     crit = sum(1 for r in regions if r.get("severity") == "critical")
     major = sum(1 for r in regions if r.get("severity") == "major")
     minor = sum(1 for r in regions if r.get("severity") == "minor")
+    score, formula = _score_breakdown(crit, major, minor)
     verdict = "готово" if not regions else "нужны правки"
-    top_actions = [
-        "Проверить и скорректировать зоны с критичными отличиями",
-        "Согласовать отступы, размеры и типографику в отмеченных блоках",
-        "Перепроверить экран после правок и перегенерировать отчёт",
-    ]
+
+    review_dt = dt.datetime.now().strftime("%d-%m-%Y %H:%M")
+    actual_dims = _image_dims(actual_path) or "размер неизвестен"
+    design_dims = _image_dims(design_path) or "размер неизвестен"
+    actual_label = f"{actual_dims} ({actual_path.name})"
+    design_label = f"{design_dims} ({design_path.name})"
+
+    placeholder = "_<заполнит агент>_"
+    placeholder_value = "_<точное значение — заполнит агент>_"
+    placeholder_fix = "_<императив с числом — заполнит агент>_"
+
     lines = [
-        "# Дизайн-ревью: Скриншот vs Скриншот",
+        f"# Дизайн-ревью: {title}",
+        "",
+        (
+            f"_Дата ревью: {review_dt}  ·  Реализация: {actual_label}  ·  "
+            f"Макет: {design_label}  ·  Тема: {placeholder}_"
+        ),
         "",
         "## Краткое резюме",
         f"Вердикт: **{verdict.capitalize()}**",
-        f"Процент соответствия: **{score} / 100**",
+        f"Score: **{score} / 100**",
+        f"Формула: `{formula}`",
         f"Ошибки: Критичные – {crit}, Значимые – {major}, Незначительные – {minor}",
         "",
-        "Что исправить в первую очередь:",
-        f"  1. {top_actions[0]}",
-        f"  2. {top_actions[1]}",
-        f"  3. {top_actions[2]}",
+        "**Top-3 правки по ROI** (Impact × 1/Effort, не по убыванию severity):",
+        "1. _<императив с числом + ссылка на A* — заполнит агент>_",
+        "2. _<императив с числом + ссылка на A* — заполнит агент>_",
+        "3. _<императив с числом + ссылка на A* — заполнит агент>_",
         "",
-        "## Несоответствия",
+        "## Что сделано хорошо",
+        (
+            "_2–3 буллета с фактическими совпадениями (заполняет агент). "
+            "Если совпадений недостаточно — оставь строку «Совпадений недостаточно "
+            "для отдельного блока.»_"
+        ),
+        "",
+        "## Ключевые расхождения",
     ]
+
     if not regions:
         lines += [
             "",
             "Существенных визуальных отличий по заданным порогам не найдено.",
         ]
     else:
-        for idx, r in enumerate(regions, start=1):
+        lines += [
+            "",
+            (
+                "_Авто-детект ниже сложен в группу `Other`. Агент в пост-обработке "
+                "перераспределяет пункты по группам Typography / Color / Spacing / "
+                "Layout / Components и заполняет числовые значения._"
+            ),
+            "",
+            "### Other",
+        ]
+        for r in regions:
             rid = r["id"]
-            sev = {"critical": "Критичная", "major": "Значимая", "minor": "Незначительная"}.get(r["severity"], "Значимая")
-            title = str(r.get("title", "Авто-детект визуального расхождения"))
-            component = str(r.get("component", "уточнить по отмеченной зоне"))
+            sev_ru = {
+                "critical": "Критичная",
+                "major": "Значимая",
+                "minor": "Незначительная",
+            }.get(r["severity"], "Значимая")
+            head = str(r.get("title", "Авто-детект визуального расхождения"))
             lines += [
                 "",
-                f"### {idx}. {title}",
-                f"Уровень: {sev} ({rid})",
-                f"Компонент: {component}",
-                "",
-                "- Что должно быть: соответствие референсному дизайну",
-                "- Что по факту: обнаружено визуальное расхождение в отмеченной зоне",
-                "- Что исправить: сверить размер/позицию/контент в зоне и привести к макету",
+                f"#### {rid}. {head}",
+                f"- Уровень: {sev_ru}",
+                f"- Impact: {placeholder}   ·   Effort: {placeholder}",
+                f"- Что должно быть: {placeholder_value}",
+                f"- Что по факту: {placeholder_value}",
+                f"- Что исправить: {placeholder_fix}",
             ]
+
+    lines += [
+        "",
+        "## Accessibility quick-check",
+        "- Контраст основного текста: _<ratio vs 4.5:1 — заполнит агент>_",
+        "- Контраст вспомогательного текста / caption: _<ratio — заполнит агент>_",
+        "- Touch target интерактивных элементов: _<замер — заполнит агент>_",
+        "- Visible focus state: _<да / нет / неизвестно — заполнит агент>_",
+        (
+            "- Текст на изображениях / низкий контраст плашек: "
+            "_<если есть проблема — описать; иначе «не выявлено»>_"
+        ),
+    ]
+
+    lines += _format_design_system_block(design_system_notes)
+
+    lines += [
+        "",
+        "## Визуальные пометки",
+        f"Файл: `DESIGN REVIEW REPORT/{annotated_name}`",
+    ]
+    if regions:
+        for r in regions:
+            lines.append(
+                f"- {r['id']} — _<тип: typography / color / spacing / layout / "
+                "components / other — заполнит агент>_"
+            )
+    else:
+        lines.append("- _нет помеченных зон_")
+
     lines += [
         "",
         "## Артефакты",
-        f"- PNG c отмеченными несоответствиями: `DESIGN REVIEW REPORT/{annotated_name}`",
-        "- Легенда зон: " + ", ".join(r["id"] for r in regions) if regions else "- Легенда зон: —",
-        f"- Отчет в формате pdf и md: `DESIGN REVIEW REPORT/{md_path.stem}`",
+        f"- PNG c пометками: `DESIGN REVIEW REPORT/{annotated_name}`",
     ]
+    if source_actual_name:
+        lines.append(
+            f"- Исходный скриншот реализации: `DESIGN REVIEW REPORT/{source_actual_name}`"
+        )
+    if source_design_name:
+        lines.append(
+            f"- Исходный макет дизайна: `DESIGN REVIEW REPORT/{source_design_name}`"
+        )
+    lines.append(f"- Отчёт md/pdf: `DESIGN REVIEW REPORT/{md_path.stem}`")
     md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -283,10 +434,31 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Automatic design review pipeline (image vs image)")
     parser.add_argument("--actual", required=True, type=Path, help="Implementation screenshot image")
     parser.add_argument("--design", required=True, type=Path, help="Design reference image")
+    parser.add_argument(
+        "--name",
+        type=str,
+        default="",
+        help="Screen name for contextual filenames (e.g. 'Feedback Modal'). If empty, falls back to legacy 'review-<ts>' naming.",
+    )
     parser.add_argument("--threshold", type=int, default=36, help="Diff threshold 0..255 (default 36)")
     parser.add_argument("--min-area", type=int, default=250, help="Minimum diff component area in pixels")
     parser.add_argument("--max-regions", type=int, default=8, help="Max number of diff zones in report")
-    parser.add_argument("--output-scale", type=float, default=2.0, help="Annotated PNG upscale factor")
+    parser.add_argument(
+        "--output-scale",
+        type=float,
+        default=1.0,
+        help="Annotated PNG upscale factor (default 1.0 — keeps source resolution, no quality loss)",
+    )
+    parser.add_argument(
+        "--design-system-notes",
+        type=str,
+        default="",
+        help=(
+            "Distilled design-system rules to embed in the report under the "
+            "'Соответствие дизайн-системе' block. Multiline string. "
+            "If empty, the report explicitly states that no DS was provided."
+        ),
+    )
     args = parser.parse_args()
 
     if not args.actual.is_file():
@@ -299,49 +471,82 @@ def main() -> None:
     ensure_report_dir()
 
     ts = timestamp_now()
-    md = add_suffix_if_exists(REPORT_DIR / f"review-{ts}.md")
-    # Keep identical timestamp stem for paired files.
-    stem = md.stem.replace("review-", "")
-    annotated = add_suffix_if_exists(REPORT_DIR / f"annotated-{stem}.png")
+    slug = slugify(args.name) if args.name else ""
+
+    # Filename layout: <slug or kind>(-<role>)?_<ts>.<ext>
+    # Underscore separates the descriptive part from the timestamp so the
+    # eye can quickly locate the date in long names like
+    # "Feedback-Modal-source-actual_09-05-2026-13-36.png".
+    if slug:
+        md = add_suffix_if_exists(REPORT_DIR / f"{slug}_{ts}.md")
+        tail = md.stem[len(slug) + 1:]
+        annotated = add_suffix_if_exists(REPORT_DIR / f"{slug}-annotated_{tail}.png")
+        src_actual_dst = add_suffix_if_exists(
+            REPORT_DIR / f"{slug}-source-actual_{tail}{args.actual.suffix.lower() or '.png'}"
+        )
+        src_design_dst = add_suffix_if_exists(
+            REPORT_DIR / f"{slug}-source-design_{tail}{args.design.suffix.lower() or '.png'}"
+        )
+        title = args.name.strip()
+    else:
+        md = add_suffix_if_exists(REPORT_DIR / f"review_{ts}.md")
+        tail = md.stem[len("review_"):]
+        annotated = add_suffix_if_exists(REPORT_DIR / f"annotated_{tail}.png")
+        src_actual_dst = add_suffix_if_exists(
+            REPORT_DIR / f"source-actual_{tail}{args.actual.suffix.lower() or '.png'}"
+        )
+        src_design_dst = add_suffix_if_exists(
+            REPORT_DIR / f"source-design_{tail}{args.design.suffix.lower() or '.png'}"
+        )
+        title = "Скриншот vs Скриншот"
 
     actual_img = Image.open(args.actual).convert("RGB")
     design_img = Image.open(args.design).convert("RGB")
-    actual_img, design_img = resize_to_common(actual_img, design_img)
+    # In-memory resize ONLY for diff/region detection. Originals stay untouched.
+    actual_for_diff, design_for_diff = resize_to_common(actual_img, design_img)
 
     regions = build_regions(
-        actual=actual_img,
-        design=design_img,
+        actual=actual_for_diff,
+        design=design_for_diff,
         threshold=args.threshold,
         min_area=args.min_area,
         max_regions=args.max_regions,
     )
-    score = max(0, int(100 - min(70, len(regions) * 8)))
 
-    # Save resized actual temp to ensure same coordinate space in annotation
-    tmp_actual = REPORT_DIR / f".tmp-actual-{stem}.png"
-    actual_img.save(tmp_actual)
-    try:
-        if regions:
-            run_annotate(tmp_actual, annotated, regions, output_scale=args.output_scale)
-        else:
-            # produce a clean annotated file even when no issues found
-            actual_img.save(annotated)
-        write_report(
-            md_path=md,
-            annotated_name=annotated.name,
-            regions=regions,
-            score=score,
-            actual_path=args.actual,
-            design_path=args.design,
-        )
-        run_pdf(md)
-    finally:
-        if tmp_actual.exists():
-            tmp_actual.unlink()
+    # Score is now derived from severity counts, not raw region count.
+    # See _score_breakdown() inside write_report().
+
+    # Annotate the ORIGINAL implementation screenshot (no resize, no quality loss).
+    # build_regions stores fractional coordinates (0..1), so resolution-independent.
+    if regions:
+        run_annotate(args.actual, annotated, regions, output_scale=args.output_scale)
+    else:
+        # No regions: copy the original bytes directly to keep 100% quality.
+        shutil.copyfile(args.actual, annotated)
+
+    # Persist full-quality copies of both inputs alongside the report so the
+    # designer always has access to originals from the same folder.
+    shutil.copyfile(args.actual, src_actual_dst)
+    shutil.copyfile(args.design, src_design_dst)
+
+    write_report(
+        md_path=md,
+        annotated_name=annotated.name,
+        regions=regions,
+        actual_path=args.actual,
+        design_path=args.design,
+        title=title,
+        source_actual_name=src_actual_dst.name,
+        source_design_name=src_design_dst.name,
+        design_system_notes=args.design_system_notes,
+    )
+    run_pdf(md)
 
     print(f"Wrote report: {md}")
     print(f"Wrote image : {annotated}")
     print(f"Wrote pdf   : {md.with_suffix('.pdf')}")
+    print(f"Wrote source actual: {src_actual_dst}")
+    print(f"Wrote source design: {src_design_dst}")
 
 
 if __name__ == "__main__":
