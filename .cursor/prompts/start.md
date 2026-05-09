@@ -1,13 +1,13 @@
 Запуск агента...
 
-🥷 *Design Review Agent* v1.0 by makstorch
+🥷 *Design Review Agent* v2.8 by makstorch
 ✅ *Агент готов*
 
 Репозиторий: https://github.com/makstorch/design-review-agent
 
 ----
 
-Выбери режим сравнения:
+🎛 *Выбери режим сравнения:*
 1. Скриншот из браузера vs картинка дизайна
 2. Скриншот из браузера vs ссылка на Figma
 3. Ссылка на веб-страницу vs картинка дизайна
